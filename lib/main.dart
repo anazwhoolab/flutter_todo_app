@@ -83,12 +83,18 @@ class NotificationService {
     final tzInfo = await FlutterTimezone.getLocalTimezone();
     tz.setLocalLocation(tz.getLocation(tzInfo.identifier));
 
+    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const ios = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
       requestSoundPermission: false,
     );
-    await _plugin.initialize(const InitializationSettings(iOS: ios));
+    await _plugin.initialize(
+        const InitializationSettings(android: android, iOS: ios));
+    await _plugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
     await _plugin
         .resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin>()
@@ -105,6 +111,13 @@ class NotificationService {
       '"$title" is due in 5 minutes',
       tz.TZDateTime.from(reminderTime, tz.local),
       const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'todo_reminders',
+          'Task Reminders',
+          channelDescription: 'Reminders for upcoming tasks',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
         iOS: DarwinNotificationDetails(
           presentAlert: true,
           presentSound: true,
@@ -112,8 +125,6 @@ class NotificationService {
         ),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
 
